@@ -3,103 +3,108 @@
 <nta>
 	<declaration>// Place global declarations here.</declaration>
 	<template>
-		<name x="5" y="5">Template</name>
+		<name x="5" y="5">Heart</name>
 		<declaration>// Place local declarations here.</declaration>
-		<location id="id0" x="365" y="323">
-			<name x="355" y="289">waitVRP</name>
-			<label kind="invariant" x="355" y="340">x &lt;= VRP</label>
+		<location id="id0" x="94" y="-263">
+			<name x="111" y="-280">Idle</name>
+			<label kind="invariant" x="84" y="-246">x &lt;= VRP</label>
 		</location>
-		<location id="id1" x="-85" y="323">
-			<name x="-144" y="306">waitRI</name>
-			<label kind="invariant" x="-127" y="340">x &lt;= RI</label>
+		<location id="id1" x="-178" y="-263">
+			<name x="-229" y="-289">Ready</name>
+			<label kind="invariant" x="-263" y="-255">x&lt;= maxwait</label>
 		</location>
-		<location id="id2" x="765" y="8">
-			<name x="755" y="-26">VPaced</name>
-			<committed/>
-		</location>
-		<location id="id3" x="578" y="8">
-			<name x="518" y="-8">waitRI</name>
-		</location>
-		<location id="id4" x="569" y="-153">
-			<name x="559" y="-187">VSensed</name>
-			<committed/>
-		</location>
-		<location id="id5" x="187" y="-110">
-			<name x="177" y="-144">Idle</name>
-			<label kind="invariant" x="177" y="-93">x &lt;= VRP</label>
-		</location>
-		<location id="id6" x="-85" y="-110">
-			<name x="-95" y="-144">Ready</name>
-			<label kind="invariant" x="-170" y="-102">x&lt;= maxwait</label>
-		</location>
-		<init ref="id1"/>
 		<transition>
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="guard" x="-33" y="357">x &gt;= VRP</label>
-			<label kind="assignment" x="-33" y="391">hpEnable = hp</label>
-			<nail x="323" y="391"/>
-			<nail x="-51" y="391"/>
+			<label kind="guard" x="-144" y="-229">x &gt;= VRP</label>
+			<label kind="assignment" x="-59" y="-229">x = 0</label>
+			<nail x="51" y="-204"/>
+			<nail x="-152" y="-204"/>
 		</transition>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="guard" x="59" y="229">x &gt;= RI</label>
-			<label kind="synchronisation" x="-17" y="229">VPace!</label>
-			<label kind="assignment" x="161" y="229">x = 0, RI = LRI, hp = false</label>
-			<nail x="-76" y="297"/>
-			<nail x="-42" y="255"/>
-			<nail x="289" y="255"/>
+			<nail x="-161" y="-314"/>
+			<nail x="-135" y="-323"/>
+			<nail x="60" y="-323"/>
 		</transition>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="synchronisation" x="0" y="297">VSense?</label>
-			<label kind="assignment" x="102" y="297">x = 0, RI = HRI, hp = true</label>
+			<label kind="guard" x="-101" y="-280">x &gt;= minWait</label>
+			<label kind="synchronisation" x="-160" y="-280">VSense!</label>
+			<label kind="assignment" x="-8" y="-280">x = 0</label>
+		</transition>
+	</template>
+	<template>
+		<name>Ventricle</name>
+		<location id="id2" x="42" y="-1649">
+			<name x="32" y="-1683">waitVRP</name>
+			<label kind="invariant" x="32" y="-1632">x &lt;= VRP</label>
+		</location>
+		<location id="id3" x="-408" y="-1649">
+			<name x="-467" y="-1666">waitRI</name>
+			<label kind="invariant" x="-450" y="-1632">x &lt;= RI</label>
+		</location>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-356" y="-1615">x &gt;= VRP</label>
+			<label kind="assignment" x="-356" y="-1581">hpEnable = hp</label>
+			<nail x="0" y="-1581"/>
+			<nail x="-374" y="-1581"/>
 		</transition>
 		<transition>
 			<source ref="id3"/>
 			<target ref="id2"/>
-			<label kind="synchronisation" x="596" y="-9">vPace?</label>
-		</transition>
-		<transition>
-			<source ref="id2"/>
-			<target ref="id3"/>
-			<label kind="assignment" x="535" y="34">vStarted = true, tv = 0</label>
-			<nail x="705" y="51"/>
-		</transition>
-		<transition>
-			<source ref="id4"/>
-			<target ref="id3"/>
-			<label kind="assignment" x="603" y="-153">vStarted = true,tv = 0</label>
-			<nail x="663" y="-110"/>
+			<label kind="guard" x="-264" y="-1743">x &gt;= RI</label>
+			<label kind="synchronisation" x="-340" y="-1743">VPace!</label>
+			<label kind="assignment" x="-162" y="-1743">x = 0, RI = LRI, hp = false</label>
+			<nail x="-399" y="-1675"/>
+			<nail x="-365" y="-1717"/>
+			<nail x="-34" y="-1717"/>
 		</transition>
 		<transition>
 			<source ref="id3"/>
-			<target ref="id4"/>
-			<label kind="synchronisation" x="573" y="-89">VSense?</label>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-323" y="-1675">VSense?</label>
+			<label kind="assignment" x="-221" y="-1675">x = 0, RI = HRI, hp = true</label>
+		</transition>
+	</template>
+	<template>
+		<name>Monitor</name>
+		<location id="id4" x="-255" y="-5780">
+			<name x="-315" y="-5796">waitRI</name>
+		</location>
+		<location id="id5" x="-68" y="-5780">
+			<name x="-78" y="-5814">VPaced</name>
+			<committed/>
+		</location>
+		<location id="id6" x="-264" y="-5941">
+			<name x="-274" y="-5975">VSensed</name>
+			<committed/>
+		</location>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-204" y="-5806">vPace?</label>
 		</transition>
 		<transition>
 			<source ref="id5"/>
+			<target ref="id4"/>
+			<label kind="assignment" x="-221" y="-5738">vStarted = true, tv = 0</label>
+			<nail x="-128" y="-5737"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id4"/>
+			<label kind="assignment" x="-230" y="-5941">vStarted = true,tv = 0</label>
+			<nail x="-170" y="-5898"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
 			<target ref="id6"/>
-			<label kind="guard" x="-51" y="-76">x &gt;= VRP</label>
-			<label kind="assignment" x="34" y="-76">x = 0</label>
-			<nail x="144" y="-51"/>
-			<nail x="-59" y="-51"/>
-		</transition>
-		<transition>
-			<source ref="id6"/>
-			<target ref="id5"/>
-			<nail x="-68" y="-161"/>
-			<nail x="-42" y="-170"/>
-			<nail x="153" y="-170"/>
-		</transition>
-		<transition>
-			<source ref="id6"/>
-			<target ref="id5"/>
-			<label kind="guard" x="-8" y="-127">x &gt;= minWait</label>
-			<label kind="synchronisation" x="-67" y="-127">VSense!</label>
-			<label kind="assignment" x="85" y="-127">x = 0</label>
+			<label kind="synchronisation" x="-260" y="-5877">VSense?</label>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
