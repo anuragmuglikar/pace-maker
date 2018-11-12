@@ -1,22 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
-	<declaration>// Place global declarations here.</declaration>
+	<declaration>// Place global declarations here.
+clock x;
+broadcast chan VPace, VSense;
+
+//Times are in milliseconds
+int minWait = 600;
+int maxWait = 1500;
+int minVRP = 150;
+int maxVRP = 240;</declaration>
 	<template>
 		<name x="5" y="5">Heart</name>
 		<declaration>// Place local declarations here.</declaration>
 		<location id="id0" x="94" y="-263">
 			<name x="111" y="-280">Idle</name>
-			<label kind="invariant" x="84" y="-246">x &lt;= VRP</label>
+			<label kind="invariant" x="84" y="-246">x &lt;= maxVRP</label>
 		</location>
 		<location id="id1" x="-178" y="-263">
 			<name x="-229" y="-289">Ready</name>
-			<label kind="invariant" x="-263" y="-255">x&lt;= maxwait</label>
+			<label kind="invariant" x="-263" y="-255">x&lt;= maxWait</label>
 		</location>
+		<init ref="id1"/>
 		<transition>
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="guard" x="-144" y="-229">x &gt;= VRP</label>
+			<label kind="guard" x="-144" y="-229">x &gt;= maxVRP</label>
 			<label kind="assignment" x="-59" y="-229">x = 0</label>
 			<nail x="51" y="-204"/>
 			<nail x="-152" y="-204"/>
@@ -40,18 +49,24 @@
 	</template>
 	<template>
 		<name>Ventricle</name>
+		<declaration>int RI;
+int LRI = 1500;
+int HRI = 600;
+bool hpEnable;
+bool hp;</declaration>
 		<location id="id2" x="42" y="-1649">
 			<name x="32" y="-1683">waitVRP</name>
-			<label kind="invariant" x="32" y="-1632">x &lt;= VRP</label>
+			<label kind="invariant" x="32" y="-1632">x &lt;= maxVRP</label>
 		</location>
 		<location id="id3" x="-408" y="-1649">
 			<name x="-467" y="-1666">waitRI</name>
 			<label kind="invariant" x="-450" y="-1632">x &lt;= RI</label>
 		</location>
+		<init ref="id3"/>
 		<transition>
 			<source ref="id2"/>
 			<target ref="id3"/>
-			<label kind="guard" x="-356" y="-1615">x &gt;= VRP</label>
+			<label kind="guard" x="-356" y="-1615">x &gt;= maxVRP</label>
 			<label kind="assignment" x="-356" y="-1581">hpEnable = hp</label>
 			<nail x="0" y="-1581"/>
 			<nail x="-374" y="-1581"/>
@@ -75,6 +90,8 @@
 	</template>
 	<template>
 		<name>Monitor</name>
+		<declaration>clock tv;
+bool vStarted;</declaration>
 		<location id="id4" x="-255" y="-5780">
 			<name x="-315" y="-5796">waitRI</name>
 		</location>
@@ -86,10 +103,11 @@
 			<name x="-274" y="-5975">VSensed</name>
 			<committed/>
 		</location>
+		<init ref="id4"/>
 		<transition>
 			<source ref="id4"/>
 			<target ref="id5"/>
-			<label kind="synchronisation" x="-204" y="-5806">vPace?</label>
+			<label kind="synchronisation" x="-204" y="-5806">VPace?</label>
 		</transition>
 		<transition>
 			<source ref="id5"/>
@@ -110,10 +128,14 @@
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
-Process = Template();
 // List one or more processes to be composed into a system.
-system Process;
+system Heart, Ventricle, Monitor;
     </system>
 	<queries>
+		<query>
+			<formula>A[]!deadlock
+</formula>
+			<comment></comment>
+		</query>
 	</queries>
 </nta>
