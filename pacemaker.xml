@@ -2,9 +2,9 @@
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
 	<declaration>// Place global declarations here.
-clock x;
-broadcast chan VPace, VSense;
 
+broadcast chan VPace;
+broadcast chan VSense;
 //Times are in milliseconds
 int minWait = 600;
 int maxWait = 1500;
@@ -12,7 +12,8 @@ int minVRP = 150;
 int maxVRP = 240;</declaration>
 	<template>
 		<name x="5" y="5">Heart</name>
-		<declaration>// Place local declarations here.</declaration>
+		<declaration>// Place local declarations here.
+clock x;</declaration>
 		<location id="id0" x="94" y="-263">
 			<name x="111" y="-280">Idle</name>
 			<label kind="invariant" x="84" y="-246">x &lt;= maxVRP</label>
@@ -49,11 +50,12 @@ int maxVRP = 240;</declaration>
 	</template>
 	<template>
 		<name>Ventricle</name>
-		<declaration>int RI;
+		<declaration>int RI = 600;
 int LRI = 1500;
 int HRI = 600;
 bool hpEnable;
-bool hp;</declaration>
+bool hp;
+clock x;</declaration>
 		<location id="id2" x="42" y="-1649">
 			<name x="32" y="-1683">waitVRP</name>
 			<label kind="invariant" x="32" y="-1632">x &lt;= maxVRP</label>
@@ -132,6 +134,10 @@ bool vStarted;</declaration>
 system Heart, Ventricle, Monitor;
     </system>
 	<queries>
+		<query>
+			<formula>A[] (Ventricle.hpEnable imply Monitor.tv &lt;= Ventricle.LRI)</formula>
+			<comment></comment>
+		</query>
 		<query>
 			<formula>A[]!deadlock
 </formula>
