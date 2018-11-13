@@ -6,7 +6,7 @@
 broadcast chan VPace;
 broadcast chan VSense;
 //Times are in milliseconds
-int minWait = 360;
+int minWait = 860;
 int maxWait = 1260;
 int VRP = 240;</declaration>
 	<template>
@@ -48,10 +48,10 @@ clock h_clk;</declaration>
 		</transition>
 	</template>
 	<template>
-		<name>Ventricle</name>
+		<name>Pacemaker</name>
 		<declaration>int RI = 1500;
-int LRI = 1500;
-int HRI = 600;
+int LRI = 1100;
+int HRI = 1500;
 bool hpEnable;
 bool hp;
 clock v_clk;</declaration>
@@ -130,7 +130,7 @@ bool vStarted;</declaration>
 	</template>
 	<system>// Place template instantiations here.
 // List one or more processes to be composed into a system.
-system Heart, Ventricle, Monitor;
+system Heart, Pacemaker, Monitor;
     </system>
 	<queries>
 		<query>
@@ -140,7 +140,7 @@ system Heart, Ventricle, Monitor;
 			</comment>
 		</query>
 		<query>
-			<formula>Ventricle.waitVRP --&gt; Ventricle.waitRI
+			<formula>Pacemaker.waitVRP --&gt; Pacemaker.waitRI
 			</formula>
 			<comment>Pacemaker shouldn't sit in waitVRP forever
 			</comment>
@@ -152,25 +152,25 @@ system Heart, Ventricle, Monitor;
 			</comment>
 		</query>
 		<query>
-			<formula>A[] (Ventricle.waitVRP imply Ventricle.v_clk&lt;= VRP)
+			<formula>A[] (Pacemaker.waitVRP imply Pacemaker.v_clk&lt;= VRP)
 			</formula>
 			<comment>The ventricle should move to waitRI after VRP
 			</comment>
 		</query>
 		<query>
-			<formula>A[] (Monitor.VPaced imply Monitor.tv &gt;= Ventricle.HRI and Monitor.tv &lt;= Ventricle.LRI)
+			<formula>A[] (Monitor.VPaced imply Monitor.tv &lt;= Pacemaker.HRI and Monitor.tv &gt;= Pacemaker.LRI)
 			</formula>
 			<comment>If the pacemaker has paced the heart you want that to have occured between the HRI and the LRI.
 			</comment>
 		</query>
 		<query>
-			<formula>A[] (Monitor.VSensed imply Monitor.tv &lt;= Ventricle.LRI)
+			<formula>A[] (Monitor.VSensed imply Monitor.tv &lt;= Pacemaker.HRI)
 			</formula>
-			<comment>If you have sensed a Ventricle event it should have happened before the LRI.
+			<comment>If you have sensed a Pacemaker event it should have happened before the LRI.
 			</comment>
 		</query>
 		<query>
-			<formula>A[] (Ventricle.hpEnable imply Monitor.tv &lt;= Ventricle.HRI)
+			<formula>A[] (Pacemaker.hpEnable imply Monitor.tv &lt;= Pacemaker.HRI)
 			</formula>
 			<comment>
 			</comment>
