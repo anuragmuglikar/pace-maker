@@ -137,7 +137,13 @@ system Heart, Ventricle, Monitor;
 		<query>
 			<formula>Heart.Idle --&gt; Heart.Ready
 			</formula>
-			<comment>If the heart stays in Idle this person is dead...
+			<comment>If the heart stays idle the person is dead and pacemaker will not work
+			</comment>
+		</query>
+		<query>
+			<formula>Ventricle.waitVRP --&gt; Ventricle.waitRI
+			</formula>
+			<comment>Pacemaker shouldn't sit in waitVRP forever
 			</comment>
 		</query>
 		<query>
