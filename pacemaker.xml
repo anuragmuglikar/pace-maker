@@ -6,8 +6,8 @@
 broadcast chan VPace;
 broadcast chan VSense;
 //Times are in milliseconds
-int minWait = 600;
-int maxWait = 1500;
+int minWait = 360;
+int maxWait = 1260;
 int minVRP = 150;
 int maxVRP = 240;</declaration>
 	<template>
@@ -50,7 +50,7 @@ clock x;</declaration>
 	</template>
 	<template>
 		<name>Ventricle</name>
-		<declaration>int RI = 600;
+		<declaration>int RI = 1500;
 int LRI = 1500;
 int HRI = 600;
 bool hpEnable;
@@ -135,13 +135,34 @@ system Heart, Ventricle, Monitor;
     </system>
 	<queries>
 		<query>
-			<formula>A[] (Ventricle.hpEnable imply Monitor.tv &lt;= Ventricle.LRI)</formula>
-			<comment></comment>
+			<formula>Heart.Idle --&gt; Heart.Ready
+			</formula>
+			<comment>If the heart stays in Idle this person is dead...
+			</comment>
+		</query>
+		<query>
+			<formula>A[] (Monitor.VPaced imply Monitor.tv &gt;= Ventricle.HRI and Monitor.tv &lt;= Ventricle.LRI)
+			</formula>
+			<comment>If the pacemaker has paced the heart you want that to have occured between the HRI and the LRI.
+			</comment>
+		</query>
+		<query>
+			<formula>A[] (Monitor.VSensed imply Monitor.tv &lt;= Ventricle.LRI)
+			</formula>
+			<comment>If you have sensed a Ventricle event it should have happened before the LRI.
+			</comment>
+		</query>
+		<query>
+			<formula>A[] (Ventricle.hpEnable imply Monitor.tv &lt;= Ventricle.HRI)
+			</formula>
+			<comment>
+			</comment>
 		</query>
 		<query>
 			<formula>A[]!deadlock
-</formula>
-			<comment></comment>
+			</formula>
+			<comment>
+			</comment>
 		</query>
 	</queries>
 </nta>
