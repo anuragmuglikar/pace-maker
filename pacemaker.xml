@@ -8,26 +8,25 @@ broadcast chan VSense;
 //Times are in milliseconds
 int minWait = 360;
 int maxWait = 1260;
-int minVRP = 150;
-int maxVRP = 240;</declaration>
+int VRP = 240;</declaration>
 	<template>
 		<name x="5" y="5">Heart</name>
 		<declaration>// Place local declarations here.
-clock x;</declaration>
+clock h_clk;</declaration>
 		<location id="id0" x="94" y="-263">
 			<name x="111" y="-280">Idle</name>
-			<label kind="invariant" x="84" y="-246">x &lt;= maxVRP</label>
+			<label kind="invariant" x="85" y="-246">h_clk &lt;= VRP</label>
 		</location>
 		<location id="id1" x="-178" y="-263">
 			<name x="-229" y="-289">Ready</name>
-			<label kind="invariant" x="-263" y="-255">x&lt;= maxWait</label>
+			<label kind="invariant" x="-263" y="-255">h_clk&lt;= maxWait</label>
 		</location>
 		<init ref="id1"/>
 		<transition>
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="guard" x="-144" y="-229">x &gt;= maxVRP</label>
-			<label kind="assignment" x="-59" y="-229">x = 0</label>
+			<label kind="guard" x="-144" y="-229">h_clk &gt;= VRP</label>
+			<label kind="assignment" x="-59" y="-229">h_clk = 0</label>
 			<nail x="51" y="-204"/>
 			<nail x="-152" y="-204"/>
 		</transition>
@@ -35,7 +34,7 @@ clock x;</declaration>
 			<source ref="id1"/>
 			<target ref="id0"/>
 			<label kind="synchronisation" x="-117" y="-340">VPace?</label>
-			<label kind="assignment" x="-34" y="-348">x = 0</label>
+			<label kind="assignment" x="-34" y="-348">h_clk = 0</label>
 			<nail x="-161" y="-314"/>
 			<nail x="-135" y="-323"/>
 			<nail x="60" y="-323"/>
@@ -43,9 +42,9 @@ clock x;</declaration>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-101" y="-280">x &gt;= minWait</label>
+			<label kind="guard" x="-101" y="-280">h_clk &gt;= minWait</label>
 			<label kind="synchronisation" x="-160" y="-280">VSense!</label>
-			<label kind="assignment" x="-8" y="-280">x = 0</label>
+			<label kind="assignment" x="-8" y="-280">h_clk = 0</label>
 		</transition>
 	</template>
 	<template>
@@ -55,20 +54,20 @@ int LRI = 1500;
 int HRI = 600;
 bool hpEnable;
 bool hp;
-clock x;</declaration>
+clock v_clk;</declaration>
 		<location id="id2" x="42" y="-1649">
 			<name x="32" y="-1683">waitVRP</name>
-			<label kind="invariant" x="32" y="-1632">x &lt;= maxVRP</label>
+			<label kind="invariant" x="32" y="-1632">v_clk &lt;= VRP</label>
 		</location>
 		<location id="id3" x="-408" y="-1649">
 			<name x="-467" y="-1666">waitRI</name>
-			<label kind="invariant" x="-450" y="-1632">x &lt;= RI</label>
+			<label kind="invariant" x="-450" y="-1632">v_clk &lt;= RI</label>
 		</location>
 		<init ref="id3"/>
 		<transition>
 			<source ref="id2"/>
 			<target ref="id3"/>
-			<label kind="guard" x="-356" y="-1615">x &gt;= maxVRP</label>
+			<label kind="guard" x="-356" y="-1615">v_clk &gt;= VRP</label>
 			<label kind="assignment" x="-356" y="-1581">hpEnable = hp</label>
 			<nail x="0" y="-1581"/>
 			<nail x="-374" y="-1581"/>
@@ -76,9 +75,9 @@ clock x;</declaration>
 		<transition>
 			<source ref="id3"/>
 			<target ref="id2"/>
-			<label kind="guard" x="-264" y="-1743">x &gt;= RI</label>
+			<label kind="guard" x="-264" y="-1743">v_clk &gt;= RI</label>
 			<label kind="synchronisation" x="-340" y="-1743">VPace!</label>
-			<label kind="assignment" x="-162" y="-1743">x = 0, RI = LRI, hp = false</label>
+			<label kind="assignment" x="-162" y="-1743">v_clk = 0, RI = LRI, hp = false</label>
 			<nail x="-399" y="-1675"/>
 			<nail x="-365" y="-1717"/>
 			<nail x="-34" y="-1717"/>
@@ -87,7 +86,7 @@ clock x;</declaration>
 			<source ref="id3"/>
 			<target ref="id2"/>
 			<label kind="synchronisation" x="-323" y="-1675">VSense?</label>
-			<label kind="assignment" x="-221" y="-1675">x = 0, RI = HRI, hp = true</label>
+			<label kind="assignment" x="-221" y="-1675">v_clk = 0, RI = HRI, hp = true</label>
 		</transition>
 	</template>
 	<template>
@@ -95,7 +94,7 @@ clock x;</declaration>
 		<declaration>clock tv;
 bool vStarted;</declaration>
 		<location id="id4" x="-255" y="-5780">
-			<name x="-315" y="-5796">waitRI</name>
+			<name x="-315" y="-5796">wait</name>
 		</location>
 		<location id="id5" x="-68" y="-5780">
 			<name x="-78" y="-5814">VPaced</name>
@@ -144,6 +143,18 @@ system Heart, Ventricle, Monitor;
 			<formula>Ventricle.waitVRP --&gt; Ventricle.waitRI
 			</formula>
 			<comment>Pacemaker shouldn't sit in waitVRP forever
+			</comment>
+		</query>
+		<query>
+			<formula>A[] (Heart.Idle imply Heart.h_clk &lt;= VRP)
+			</formula>
+			<comment>The heart hould not be in the idle state for longer than VRP
+			</comment>
+		</query>
+		<query>
+			<formula>A[] (Ventricle.waitVRP imply Ventricle.v_clk&lt;= VRP)
+			</formula>
+			<comment>The ventricle should move to waitRI after VRP
 			</comment>
 		</query>
 		<query>
