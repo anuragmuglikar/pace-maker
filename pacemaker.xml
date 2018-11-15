@@ -164,12 +164,6 @@ system Heart, Pacemaker, Monitor;
 			</comment>
 		</query>
 		<query>
-			<formula>A[] (Monitor.VSensed imply Monitor.tv &lt;= Pacemaker.HRI)
-			</formula>
-			<comment>If you have sensed a Pacemaker event it should have happened before the LRI.
-			</comment>
-		</query>
-		<query>
 			<formula>A[] (Pacemaker.hpEnable imply Monitor.tv &lt;= Pacemaker.HRI)
 			</formula>
 			<comment>
