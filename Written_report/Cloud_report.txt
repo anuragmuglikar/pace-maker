@@ -1,0 +1,2 @@
+The cloud communication is done using the MQTT library. 
+It relays the alarm messages RATE_ALARM(for high heart rate) and PACE_ALARM(low heart rate). The observer communicates the alarms by publishing to the topic. The published message is sent to the MQTT Broker from where it is relayed to all other MQTT clients that have subscribed on this topic. In this way, the alarms are sent to the cloud application and front end from the pacemaker device.
