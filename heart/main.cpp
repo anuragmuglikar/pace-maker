@@ -21,12 +21,13 @@ volatile enum {READY, IDLE}heartState;
 
 
 void waitForVRP(){
-    heartState = READY;   
-    pc.printf("vrp\n");
+      
+    //pc.printf("vrp\n");
     timeVRP.stop();
     timeVRP.reset();
     timeVRP.start();
     while(timeVRP.read_ms() >= VRP);
+    heartState = READY; 
 }
 
 void beat() {
@@ -39,17 +40,19 @@ void beat() {
     }else{
         pc.printf("rec pace\n");
         receivedPace = false;   
-        heartState = READY;
+        heartState = IDLE;
     }
     waitForVRP();
     
 }
 
 void paced() {
+    if(heartState != IDLE){
     myled2 = !myled2;
     receivedPace = true;
     heartState = IDLE;
     timeVRP.reset();
+    }
 }
 
 
@@ -63,7 +66,7 @@ int main() {
         timeToBeat.reset();
         timeToBeat.start();
         //pc.printf("W.R.B\n");
-        while(timeToBeat.read_ms() >= random_beat  && receivedPace && heartState != IDLE);
+        while((timeToBeat.read_ms() >= random_beat  || receivedPace) && heartState != IDLE);
         beat();
     }
 
