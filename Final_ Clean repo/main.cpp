@@ -112,7 +112,7 @@ void monitor_alarm(int alarm)
         {
             
             led_fast_alarm = 1;
-            while(alarm_t.read_ms() - time_start < 200) ;
+            while(alarm_t.read_ms() < 200*(i+1));
             led_fast_alarm = 0;
         }
         
@@ -125,7 +125,7 @@ void monitor_alarm(int alarm)
         for (i = 0; i < 3; i++) 
         {
             led_slow_alarm = 1;
-            while(alarm_t.read_ms() - time_start < 200) ;
+            while(alarm_t.read_ms() < 200*(i+1)) ;
             led_slow_alarm = 0;
         }
         pc.printf("Too slow\r\n");
@@ -166,7 +166,7 @@ void  monitor_calc()
     
     int heart_rate;
     int num_paces;
-    printf("calc...\n");
+    //printf("calc...\n");
     // I want to check the heart rate in bpm for the alarm,
     // so if my window time is smaller than 60 seconds I want to have
     // this window factor to scale it
@@ -206,11 +206,13 @@ void  monitor_calc()
             }else{
                 printf("Failed PUB%d\n", rc);
             }
+            //printf("About to alarm\r\n");
             if (heart_rate > URL) {
                 monitor_alarm(RATE_ALARM);    
             } else if (num_paces > PACE_THRESH) {
                 monitor_alarm(PACE_ALARM);    
             }
+         //printf("Alarm done\r\n");
          wait_start = time(NULL);
          // Wait until you need to calculate averages again
          while (difftime(time(NULL),wait_start) < AVG_INTERVAL); 
@@ -244,7 +246,7 @@ void pacemaker()
 
         if (sense_received)
         {
-            pc.printf("sense received\n");
+            //pc.printf("sense received\n");
             sense_received = 0;
             
             // Let monitor know there was a heartbeaat
@@ -264,7 +266,7 @@ void pacemaker()
             // Indicate oace was sent for monitor
             pace_sent = 1;
             
-            pc.printf("paced - %d\n", (timer.read_ms() - start_time));
+            //pc.printf("paced - %d\n", (timer.read_ms() - start_time));
             
             RI = LRI;
             hp = false;
