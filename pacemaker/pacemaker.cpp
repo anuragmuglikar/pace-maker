@@ -25,10 +25,10 @@ Serial pc(USBTX, USBRX);
 #define AVG_INTERVAL    10 // Can be 5, 10, 15, or 20 seconds
 
 
-DigitalOut my_led(LED1);
+DigitalOut pace_signal_led(LED1);
 DigitalOut led_slow_alarm(LED2);
 DigitalOut led_fast_alarm(LED3);
-DigitalOut send_pace(p5);
+DigitalOut pace_signal(p5);
 InterruptIn receive_sense(p6);
 
 // Alarm indicators
@@ -47,6 +47,7 @@ bool hp_enable, hp;
 bool sense_received = 0;
 bool pace_sent = 0;
 time_t start_time;
+Timer timer;
 
 /* pace_times is a subest of beat_times. I need all beats and paces to
  * calculate the average heartrate, but only the number of paces to determine 
@@ -95,6 +96,8 @@ void monitor_alarm(int alarm)
             led_fast_alarm = 0;
         }
         
+        pc.printf("Too fast\r\n");
+        
     } else if (alarm == PACE_ALARM) 
     {
            
@@ -105,6 +108,7 @@ void monitor_alarm(int alarm)
             wait_ms(200);
             led_slow_alarm = 0;
         }
+        pc.printf("Too slow\r\n");
     }
 } 
 
@@ -138,6 +142,7 @@ void monitor_obs()
 void  monitor_calc() 
 {
     time_t current_time;
+    time_t wait_start = time(NULL);
     
     int heart_rate;
     int num_paces;
@@ -150,10 +155,10 @@ void  monitor_calc()
     // The monitor needs to wait for at least one full AVG_WINDOW
     // before it starts to monitor the average heartrate or else 
     // it is going to give spurious low heartrate alarms
-    wait_ms(AVG_WINDOW*1000);
+    while (difftime(time(NULL),wait_start) < AVG_WINDOW*1000);
     
     while(1) {
-         
+          pc.printf("In monitor calc loop\r\n");
          // Get the current time and see if you need to prune any elements from
          // your lists
          current_time = time(NULL);
@@ -163,14 +168,15 @@ void  monitor_calc()
          // then set any necessary alarms
             heart_rate = beat_times.size() / AVG_WINDOW * window_factor;
             num_paces = pace_times.size();
+            pc.printf("Heart rate = %d\r\n", heart_rate);
             if (heart_rate > URL) {
                 monitor_alarm(RATE_ALARM);    
             } else if (num_paces > PACE_THRESH) {
                 monitor_alarm(PACE_ALARM);    
             }
-         
+         wait_start = time(NULL);
          // Wait until you need to calculate averages again
-         wait_ms(AVG_INTERVAL * 1000);  
+         while (difftime(time(NULL),wait_start) < AVG_INTERVAL*1000); 
     }
 }
     
@@ -180,38 +186,54 @@ void receive_sense_ISR()
     sense_received = 1;
 }
 
+void pace()
+{
+    pace_signal = 1;
+    pace_signal = 0;
+}
+
 void pacemaker()
 {
-    start_time = time(NULL);
+    start_time = timer.read_ms();
+    timer.start();
     while(true)
     {
-        while(!sense_received && difftime(time(NULL), start_time) < RI)
-        ;
-        
+
+        while(!sense_received && ((timer.read_ms() - start_time) < RI))
+       ;
+
         if (sense_received)
         {
+            pc.printf("sense received\n");
             sense_received = 0;
             RI = HRI;
             hp = true;
-            start_time = time(NULL);
+            start_time = timer.read_ms();
         }
         else
         {
-            // TODO: Send signal to heart
+            // Send pace signal to heart
+            pace_signal_led = 1;
+            pace();
+            
+            pc.printf("paced\n");
+            
             RI = LRI;
             hp = false;
-            // TODO: Blink LED
-            start_time = time(NULL);
+            start_time = timer.read_ms();
+            pace_signal_led = 0;
         }
-        Thread::wait(VRP);
+        // Wait for VRP
+        while((timer.read_ms() - start_time) < VRP);
         hp_enable = hp;
     }
 }
     
 int main() 
 {
+    pc.baud(9600);
     // Enable the ISR to receive snse signals from heart simulator
-    receive_sense.rise(&receive_sense_ISR);
+    //receive_sense.rise(&receive_sense_ISR);
     
     // Start both the threads - pacemaker and observer
     monitor_observe.start(monitor_obs);
