@@ -104,7 +104,6 @@ void monitor_alarm(int alarm)
     int i;
     Timer alarm_t;
     alarm_t.start();
-    int time_start;
     if (alarm == RATE_ALARM) 
     {
         // SEND MQTT MESSAGE HERE
@@ -125,7 +124,7 @@ void monitor_alarm(int alarm)
         for (i = 0; i < 3; i++) 
         {
             led_slow_alarm = 1;
-            while(alarm_t.read_ms() < 200*(i+1)) ;
+            while(alarm_t.read_ms() < 200*(i + 1)) ;
             led_slow_alarm = 0;
         }
         pc.printf("Too slow\r\n");
@@ -142,6 +141,9 @@ void monitor_obs()
     
     // Monitor just runs forever
     while (1) {
+    
+        // Wait until you see a sense or pace
+        while (!sense_flag && !pace_sent) ;
     
         // Indicate if you saw a sense or a pace, then set the indicator back to
         // 0 so that the current signal is not counted more than once
