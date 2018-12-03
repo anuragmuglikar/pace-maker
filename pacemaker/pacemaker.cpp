@@ -21,15 +21,15 @@ Serial pc(USBTX, USBRX);
 
 
 // Heart monitor window averaging variables
-#define AVG_WINDOW      60 // Can be 20, 40, or 60 seconds
+#define AVG_WINDOW      20 // Can be 20, 40, or 60 seconds
 #define AVG_INTERVAL    10 // Can be 5, 10, 15, or 20 seconds
 
 
 DigitalOut pace_signal_led(LED1);
 DigitalOut led_slow_alarm(LED2);
 DigitalOut led_fast_alarm(LED3);
-DigitalOut pace_signal(p5);
-InterruptIn receive_sense(p6);
+DigitalOut pace_signal(p18);
+InterruptIn receive_sense(p19);
 
 // Alarm indicators
 bool slow_alarm = 0;
@@ -45,6 +45,7 @@ int RI = 1500;
 int VRP = 240;
 bool hp_enable, hp;   
 bool sense_received = 0;
+bool sense_flag = 0;
 bool pace_sent = 0;
 time_t start_time;
 Timer timer;
@@ -85,14 +86,17 @@ void prune_lists(time_t new_time)
 void monitor_alarm(int alarm) 
 {
     int i;
-    
+    Timer alarm_t;
+    alarm_t.start();
+    int time_start;
     if (alarm == RATE_ALARM) 
     {
         // SEND MQTT MESSAGE HERE
         for (i = 0; i < 3; i++) 
         {
+            
             led_fast_alarm = 1;
-            wait_ms(200);
+            while(alarm_t.read_ms() - time_start < 200) ;
             led_fast_alarm = 0;
         }
         
@@ -105,7 +109,7 @@ void monitor_alarm(int alarm)
         for (i = 0; i < 3; i++) 
         {
             led_slow_alarm = 1;
-            wait_ms(200);
+            while(alarm_t.read_ms() - time_start < 200) ;
             led_slow_alarm = 0;
         }
         pc.printf("Too slow\r\n");
@@ -125,9 +129,9 @@ void monitor_obs()
     
         // Indicate if you saw a sense or a pace, then set the indicator back to
         // 0 so that the current signal is not counted more than once
-        if (sense_received) {
+        if (sense_flag) {
             beat_times.push_back(time(NULL));
-            sense_received = 0;
+            sense_flag = 0;
         }
         if (pace_sent) {
             new_time = time(NULL);
@@ -135,7 +139,7 @@ void monitor_obs()
             pace_times.push_back(new_time);
             pace_sent = 0;
         }
-
+    
     }
 }
 
@@ -155,7 +159,7 @@ void  monitor_calc()
     // The monitor needs to wait for at least one full AVG_WINDOW
     // before it starts to monitor the average heartrate or else 
     // it is going to give spurious low heartrate alarms
-    while (difftime(time(NULL),wait_start) < AVG_WINDOW*1000);
+    while (difftime(time(NULL),wait_start) < AVG_WINDOW);
     
     while(1) {
           pc.printf("In monitor calc loop\r\n");
@@ -166,9 +170,10 @@ void  monitor_calc()
          
          // Find average heart rate and number of paces if it is time to,
          // then set any necessary alarms
-            heart_rate = beat_times.size() / AVG_WINDOW * window_factor;
+            heart_rate = beat_times.size() * window_factor;
             num_paces = pace_times.size();
             pc.printf("Heart rate = %d\r\n", heart_rate);
+            pc.printf("Number paces = %d\r\n", num_paces);
             if (heart_rate > URL) {
                 monitor_alarm(RATE_ALARM);    
             } else if (num_paces > PACE_THRESH) {
@@ -176,7 +181,7 @@ void  monitor_calc()
             }
          wait_start = time(NULL);
          // Wait until you need to calculate averages again
-         while (difftime(time(NULL),wait_start) < AVG_INTERVAL*1000); 
+         while (difftime(time(NULL),wait_start) < AVG_INTERVAL); 
     }
 }
     
@@ -206,6 +211,10 @@ void pacemaker()
         {
             pc.printf("sense received\n");
             sense_received = 0;
+            
+            // Let monitor know there was a heartbeaat
+            sense_flag = 1;
+            
             RI = HRI;
             hp = true;
             start_time = timer.read_ms();
@@ -216,7 +225,10 @@ void pacemaker()
             pace_signal_led = 1;
             pace();
             
-            pc.printf("paced\n");
+            // Indicate oace was sent for monitor
+            pace_sent = 1;
+            
+            //pc.printf("paced\n");
             
             RI = LRI;
             hp = false;
@@ -233,10 +245,11 @@ int main()
 {
     pc.baud(9600);
     // Enable the ISR to receive snse signals from heart simulator
-    //receive_sense.rise(&receive_sense_ISR);
+    receive_sense.rise(&receive_sense_ISR);
     
     // Start both the threads - pacemaker and observer
     monitor_observe.start(monitor_obs);
     monitor_calculate.start(monitor_calc);
     pacemaker_thread.start(pacemaker);
+}
 }
