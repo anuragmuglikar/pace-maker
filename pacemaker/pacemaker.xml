@@ -161,13 +161,7 @@ system Heart, Pacemaker, Monitor;
 			</comment>
 		</query>
 		<query>
-			<formula>A[] ((Pacemaker.WaitRI&amp;&amp;Pacemaker.started) imply Pacemaker.x&gt;= Pacemaker.VRP)
-			</formula>
-			<comment>
-			</comment>
-		</query>
-		<query>
-			<formula>A[] (Pacemaker.hpEnable imply Monitor.tv &lt;= Pacemaker.HRI)
+			<formula>A[] ((Pacemaker.waitRI&amp;&amp;Pacemaker.started) imply Pacemaker.v_clk&gt;= VRP)
 			</formula>
 			<comment>
 			</comment>
