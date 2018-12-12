@@ -25,9 +25,11 @@ Serial pc(USBTX, USBRX);
 #define AVG_INTERVAL    5 // Can be 5, 10, 15, or 20 seconds
 
 
-DigitalOut pace_signal_led(LED1);
-DigitalOut led_slow_alarm(LED2);
-DigitalOut led_fast_alarm(LED3);
+DigitalOut led_slow_alarm(LED3);
+DigitalOut led_fast_alarm(LED4);
+
+DigitalOut senseBeatLED(LED1);
+DigitalOut sendPaceLED(LED2);
 
 
 DigitalOut pace_signal(p19);
@@ -52,6 +54,8 @@ bool sense_flag = 0;
 bool pace_sent = 0;
 time_t start_time;
 Timer timer;
+Ticker indicator;
+Ticker paceIndicator;
 
 /* pace_times is a subest of beat_times. I need all beats and paces to
  * calculate the average heartrate, but only the number of paces to determine 
@@ -60,6 +64,11 @@ Timer timer;
 deque<time_t> beat_times;
 deque<time_t> pace_times;
 
+// The number of times each alarm has occured
+unsigned int rate_alarm_count = 0;
+unsigned int pace_alarm_count = 0;
+
+// Threads
 Thread pacemaker_thread;
 Thread monitor_observe;
 Thread monitor_calculate;
@@ -106,7 +115,6 @@ void monitor_alarm(int alarm)
     alarm_t.start();
     if (alarm == RATE_ALARM) 
     {
-        // SEND MQTT MESSAGE HERE
         for (i = 0; i < 3; i++) 
         {
             
@@ -114,13 +122,14 @@ void monitor_alarm(int alarm)
             while(alarm_t.read_ms() < 200*(i+1));
             led_fast_alarm = 0;
         }
-        
+        rate_alarm_count++;
+        sprintf(buf, "Fast Alarm :%d", rate_alarm_count);
         pc.printf("Too fast\r\n");
         
     } else if (alarm == PACE_ALARM) 
     {
-           
-        // SEND MQTT MESSAGE HERE
+        pace_alarm_count++;
+        sprintf(buf, "Slow Alarm :%d", pace_alarm_count);  
         for (i = 0; i < 3; i++) 
         {
             led_slow_alarm = 1;
@@ -128,6 +137,22 @@ void monitor_alarm(int alarm)
             led_slow_alarm = 0;
         }
         pc.printf("Too slow\r\n");
+    }else{
+          sprintf(buf, "Normal :%d", 1);    
+    }
+    message.qos = MQTT::QOS0;
+    message.retained = true;
+    message.dup = false;
+    message.payload = (void*)buf;
+    message.payloadlen = strlen(buf);
+    int rc = client.publish(topic, message);
+    
+    client.yield(50);
+    if(rc == 0){
+        printf("Success PUB%d\n", rc);
+    }else{
+        printf("Failed PUB%d\n", rc);
+        client.connect(data);
     }
 } 
 
@@ -195,7 +220,7 @@ void  monitor_calc()
             num_paces = pace_times.size();
             pc.printf("H.R = %d\r\n", heart_rate);
             pc.printf("N.P = %d\r\n", num_paces);
-            sprintf(buf, "%d", heart_rate);
+            sprintf(buf, "BPM :%d", heart_rate);
             message.retained = true;
             message.dup = false;
             message.payload = (void*)buf;
@@ -207,18 +232,40 @@ void  monitor_calc()
                 printf("Success PUB%d\n", rc);
             }else{
                 printf("Failed PUB%d\n", rc);
+                client.connect(data);
             }
             //printf("About to alarm\r\n");
             if (heart_rate > URL) {
                 monitor_alarm(RATE_ALARM);    
             } else if (num_paces > PACE_THRESH) {
                 monitor_alarm(PACE_ALARM);    
+            }else{
+                  sprintf(buf, "Normal :%d", 1);    
+            }
+            message.qos = MQTT::QOS0;
+            message.retained = true;
+            message.dup = false;
+            message.payload = (void*)buf;
+            message.payloadlen = strlen(buf);
+            rc = client.publish(topic, message);
+            
+            client.yield(50);
+            if(rc == 0){
+                printf("Success PUB%d\n", rc);
+            }else{
+                printf("Failed PUB%d\n", rc);
+                client.connect(data);
             }
          //printf("Alarm done\r\n");
          wait_start = time(NULL);
          // Wait until you need to calculate averages again
          while (difftime(time(NULL),wait_start) < AVG_INTERVAL); 
     }
+}
+
+void flip(){
+senseBeatLED = 0;
+indicator.detach();    
 }
     
 // ISR to receive sense signals
@@ -227,11 +274,17 @@ void receive_sense_ISR()
     sense_received = 1;
 }
 
+void pIndicate(){
+    sendPaceLED = 0;
+    paceIndicator.detach();
+}
+
 void pace()
 {
+    sendPaceLED = 1;
+    paceIndicator.attach(&pIndicate, 0.1);   
     pace_signal = 1;
     pace_signal = 0;
-
 }
 
 void pacemaker()
@@ -241,50 +294,45 @@ void pacemaker()
     timer.start();
     while(true)
     {
-
-        //while(!sense_received && ((timer.read_ms() - start_time) < RI))
-        while(!sense_received && ((timer.read_ms()) < RI))
-       ;
-
+        
+        while(!sense_received && ((timer.read_ms()) < RI));
         if (sense_received)
         {
             //pc.printf("sense received\n");
             sense_received = 0;
-            
             // Let monitor know there was a heartbeaat
             sense_flag = 1;
-            
             RI = HRI;
             hp = true;
-            //start_time = timer.read_ms();
             timer.reset();
+            senseBeatLED = 1;
+            indicator.attach(&flip, 0.01);
         }
         else
         {
             // Send pace signal to heart
-            pace_signal_led = 1;
             pace();
-            
             // Indicate oace was sent for monitor
             pace_sent = 1;
-            
             //pc.printf("paced - %d\n", (timer.read_ms() - start_time));
-            
             RI = LRI;
             hp = false;
             //start_time = timer.read_ms();
             timer.reset();
-            pace_signal_led = 0;
         }
         // Wait for VRP
-        //while((timer.read_ms() - start_time) < VRP);
+        receive_sense.disable_irq();
         while((timer.read_ms()) < VRP);
+        receive_sense.enable_irq();
         hp_enable = hp;
     }
 }
     
 int main() 
 {
+    
+    led_slow_alarm = 0;
+    led_fast_alarm = 0;
     pc.baud(9600);
     // Enable the ISR to receive snse signals from heart simulator
     wifi.set_credentials(MBED_CONF_APP_WIFI_SSID, MBED_CONF_APP_WIFI_PASSWORD);
